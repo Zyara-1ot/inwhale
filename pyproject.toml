@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inwhale"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "black>=25.12.0",
+    "torch>=2.9.1",
+]
+
+[tool.setuptools]
+packages = ["inwhale"]

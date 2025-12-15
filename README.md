@@ -1,242 +1,116 @@
-
+<center>
+  <img src="assets/logo2.png">
+</center>
 
 # inwhale
 
-![alt text](assets/logo.jpg)
+[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
+**inwhale** is an educational library for understanding, implementing, and experimenting with quantization techniques used in machine learning, signal processing, and large language model (LLM) compression.
 
-An educational library for understanding, exploring, and implementing **all major quantization techniques** used in machine learning, signal processing, LLM compression, and efficient inference.
+The project is designed to be **readable first, correct second, fast third**.  
+Every quantizer is meant to be studied, modified, and reasoned about, not treated as a black box.
 
-inwhale aims to be the most complete learning-oriented quantization library available — covering everything from uniform quantization to GPTQ, LSQ, delta modulation, product quantization, and dozens of advanced methods.
+This is **not** a drop-in inference engine.  
+It is a learning, research, and experimentation toolkit.
 
----
+## Why inwhale exists
 
+Quantization literature is fragmented:
+- papers explain ideas but hide implementation details
+- libraries optimize for performance, not understanding
+- newcomers struggle to connect math, code, and behavior
 
-# Features
+inwhale aims to close that gap by providing:
+- clear, minimal implementations of quantization methods
+- explicit numerical conventions and assumptions
+- small demos that show *what actually happens*
 
-inwhale supports (or plans to support) a comprehensive list of quantization methods, organized into categories. These represent virtually *all* quantization techniques seen in ML, DSP, and LLM research.
+## What inwhale covers
 
----
+inwhale focuses on the full quantization stack, including:
 
-# Supported Quantization Methods
+- Uniform and non-uniform quantization
+- Rounding strategies and observers
+- Post-training quantization (PTQ)
+- Quantization-aware training (QAT)
+- LLM-specific quantization methods
+- Calibration and error correction techniques
 
-## 1. Uniform Quantization
+The full roadmap and implementation status live in **[TODO.md](TODO.md)**.
 
-* Symmetric uniform
-* Asymmetric uniform
-* Affine quantization
-* Mid-rise / mid-tread quantizers
-* Dead-zone quantizers
-* Per-tensor and per-channel quantization
-* Mixed-precision schemes
-* Sub-byte (4-bit, 2-bit, 1-bit) quantization
+## Project status
 
-## 2. Non-Uniform Quantization
+inwhale is under active development.
 
-* Logarithmic quantization (power-of-two)
-* µ-law companding
-* A-law companding
-* Learned non-uniform (LUT-based) quantizers
-* Vector quantizers
-* Lattice quantizers
-* Residual quantization
-* Additive quantization
-* Product quantization (PQ, OPQ, RQ)
-* VQ-VAE–style codebook quantization
+Current focus:
+- Core quantizer abstractions
+- Uniform quantization (symmetric -> asymmetric -> affine)
+- Testable, reference-quality behavior
 
-## 3. Rounding Strategies
+Expect breaking changes early on.
 
-* Nearest rounding
-* Stochastic rounding
-* Banker’s rounding
-* Round-away-from-zero
-* Floor / ceil
-* Truncation
-* Adaptive rounding (AdaRound)
-* Gradient-learned rounding (LSQ+)
+## Installation
 
-## 4. Observers / Range Estimators
-
-* MinMax observer
-* Moving average observer
-* Percentile observer
-* MSE-based scale search
-* KL-divergence observer
-* Histogram observers
-* Per-channel observers
-* Gradient-based scaling (LSQ family)
-
-## 5. Post-Training Quantization (PTQ)
-
-* Static PTQ
-* Dynamic PTQ
-* Weight-only quantization
-* SmoothQuant
-* GPTQ (second-order PTQ)
-* AWQ (outlier-aware PTQ)
-* ZeroQuant
-* RQ / Relaxed Quantization
-* Outlier splitting (LLM.int8)
-* Blockwise quantization
-
-## 6. Quantization-Aware Training (QAT)
-
-* Fake quantization
-* LSQ (Learned Step Size Quantization)
-* LSQ+
-* INQ (Incremental Quantization)
-* DoReFa-Net
-* Ternary quantization (TTQ)
-* Binary networks (XNOR-Net, BinaryConnect, ABC-Net)
-* QAT for transformers and attention modules
-
-## 7. LLM-Specific Quantization
-
-* NF4 / FP4 formats
-* Group-wise quantization
-* Per-row / per-column quantization
-* Attention-specific quantization
-* Outlier-aware activation quantization
-* Quantized LoRA (QLoRA)
-* Mixed precision activations (8-bit + 16-bit outliers)
-
-## 8. Vector & Codebook Quantization
-
-* PQ / OPQ / RQ / AQ
-* Neural codebook learning
-* Multi-level vector quantization
-
-## 9. Hardware-Inspired Quantization
-
-* Power-of-two quantization
-* Delta quantization
-* Delta modulation (DPCM)
-* Predictive quantization (IMA-ADPCM)
-* Analog-inspired log quantization
-* Quantization for FPGA/ASIC constraints
-
-## 10. Decomposition + Quantization
-
-* Quantized SVD
-* Quantized tensor decompositions
-* Quantized LoRA
-* Low-rank approximations + quantization combos
-
-## 11. Calibration & Error Correction
-
-* Bias correction
-* Channel equalization
-* Ghost clipping
-* Progressive calibration
-* Scale smoothing
-* Round-aware loss shaping
-
-This makes inwhale suitable not just for basic quantization, but for research, teaching, and experimentation with cutting-edge LLM compression techniques.
-
----
-
-# Installation
-
-```
-git clone https://github.com/<your-username>/inwhale.git
+```bash
+git clone https://github.com/datavorous/inwhale.git
 cd inwhale
-pip install -r requirements.txt
+
+python3 -m venv .venv
+source .venv/bin/activate # Linux/macOS
+# .venv\Scripts\activate # Windows
+
+pip install -e .
+pip install uv
+uv install
+
+uv run examples/uniform_demo.py
 ```
 
----
-
-# Quick Start
+## Quick start
 
 ```python
 import torch
-from inwhale.core.uniform import UniformQuantizer
+from inwhale.core.uniform import SymmetricUniformQuantizer
+from inwhale.observers.minmax import MinMaxObserver
+from inwhale.rounding.nearest import NearestRounding
 
-x = torch.tensor([1.2, -0.7, 0.4])
-quant = UniformQuantizer(bits=8)
+x = torch.tensor([1.2, -0.7, 0.4, 2.3, -1.9])
+
+observer = MinMaxObserver()
+rounding = NearestRounding()
+quant = SymmetricUniformQuantizer(bits=8, observer=observer, rounding=rounding)
 
 qx = quant.quantize(x)
 dx = quant.dequantize(qx)
 
-print(dx)
+print("Original:", x)
+print("Quantized:", qx)
+print("Dequantized:", dx)
+print("Absolute error:", (x - dx).abs())
 ```
 
----
+This example demonstrates a basic uniform quantization to dequantization cycle.
+More demos will be added alongside each implemented method.
 
-# Project Structure
+## Contributing
 
-```
-inwhale/
-│
-├── inwhale/
-│   ├── core/
-│   │   ├── uniform.py
-│   │   ├── affine.py
-│   │   ├── rounding.py
-│   │   ├── observers.py
-│   │   └── quantizer.py
-│   │
-│   ├── ptq/
-│   │   ├── linear_ptq.py
-│   │   ├── conv_ptq.py
-│   │   ├── gptq.py
-│   │   ├── awq.py
-│   │   └── smoothquant.py
-│   │
-│   ├── qat/
-│   │   ├── fake_quant.py
-│   │   ├── lsq.py
-│   │   ├── binary.py
-│   │   └── qmodules.py
-│   │
-│   ├── llm/
-│   │   ├── nf4.py
-│   │   ├── fp4.py
-│   │   ├── gptq_blocks.py
-│   │   └── group_quant.py
-│   │
-│   ├── vector/
-│   │   ├── pq.py
-│   │   ├── opq.py
-│   │   ├── rq.py
-│   │   └── aq.py
-│   │
-│   ├── utils/
-│   │   ├── calibration.py
-│   │   ├── error_metrics.py
-│   │   └── plotting.py
-│   │
-│   └── datasets/
-│       └── calibration_sets.py
-│
-├── examples/
-├── tests/
-├── CONTRIBUTING.md
-├── README.md
-└── requirements.txt
-```
+Contributions are welcome and encouraged.
 
----
+* Start with **[TODO.md](TODO.md)** to find scoped tasks
+* Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for coding rules and workflow
+* Beginner-friendly issues focus on core quantization concepts
 
-# Goals of the Project
+This project values **clarity over cleverness** and **correctness over speed**.
 
-* Provide the most **complete educational coverage** of quantization techniques
-* Enable students to learn quantization mathematically and practically
-* Make research papers easier to understand through clean code
-* Support LLM compression experiments
-* Build a collaborative quantization learning hub for your club
+## Design philosophy 
 
+* Explicit math beats implicit magic
+* Simple code beats micro-optimizations
+* Every quantizer should be testable in isolation
+* If a behavior is surprising, it should be documented
 
----
+## License
 
-# Contributing
-
-See **CONTRIBUTING.md** for workflows, coding rules, and guidelines.
-
-Beginner-friendly issues are labeled and designed to teach real quantization concepts.
-
----
-
-# License
-
-MIT License.
-
+MIT
