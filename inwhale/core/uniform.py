@@ -160,3 +160,63 @@ class AsymmetricUniformQuantizer(BaseQuantizer):
 
     def dequantize(self, qx):
         return (qx - self.zero_point) * self.scale
+
+
+class DeadZoneSymmetricQuantizer(BaseQuantizer):
+    def __init__(self, bits, observer, rounding, threshold_ratio=0.5):
+        super().__init__(bits)
+
+        self.observer = observer
+        self.rounding = rounding
+        self.scale = None
+        self.threshold_ratio = threshold_ratio
+        self.threshold = None
+
+        self.qmin = -(1 << (bits - 1))
+        self.qmax = (1 << (bits - 1)) - 1
+
+    def _compute_params(self):
+        min_val, max_val = self.observer.get_range()
+
+        if max_val == min_val:
+            if isinstance(max_val, torch.Tensor):
+                self.scale = torch.ones_like(max_val)
+            else:
+                self.scale = torch.tensor(1.0)
+            self.threshold = self.threshold_ratio * self.scale
+            return
+
+        max_abs = torch.max(min_val.abs(), max_val.abs())
+
+        self.scale = max_abs / self.qmax
+        self.scale = torch.clamp(self.scale, min=1e-8)
+
+        self.threshold = self.threshold_ratio * self.scale
+
+    def quantize(self, x):
+        self.observer.observe(x)
+        self._compute_params()
+
+        mask = x.abs() < self.threshold
+
+        sign = torch.sign(x)
+        abs_x = x.abs()
+
+        # we shift by threshold, then quantize
+        qx = sign * self.rounding.round((abs_x - self.threshold) / self.scale)
+
+        qx = torch.where(mask, torch.zeros_like(qx), qx)
+        qx = torch.clamp(qx, self.qmin, self.qmax)
+
+        return qx
+
+    def dequantize(self, qx):
+        sign = torch.sign(qx)
+        abs_qx = qx.abs()
+
+        dx = sign * (
+            abs_qx * self.scale
+            + torch.where(qx != 0, self.threshold, torch.zeros_like(self.threshold))
+        )
+
+        return dx
