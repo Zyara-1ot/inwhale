@@ -17,12 +17,19 @@ class PercentileObserver(Observer):
         self.max_val = None
 
     def observe(self, x):
+        if x.numel() == 0:
+            raise ValueError("Cannot observe empty tensor")
+        if torch.isnan(x).any():
+            raise ValueError("Input tensor contains NaN values")
 
         x = x.detach()
         x_flat = x.flatten()
 
-        min_x = torch.quantile(x_flat, self.lower_quantile)
-        max_x = torch.quantile(x_flat, self.upper_quantile)
+        # min_x = torch.quantile(x_flat, self.lower_quantile)
+        # max_x = torch.quantile(x_flat, self.upper_quantile)
+
+        quantiles = torch.quantile(x_flat, torch.tensor([self.lower_quantile, self.upper_quantile], device=x.device))
+        min_x, max_x = quantiles[0], quantiles[1]
 
         self.min_val = min_x
         self.max_val = max_x
