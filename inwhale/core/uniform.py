@@ -362,9 +362,10 @@ class PerChannelAsymmetricUniformQuantizer(BaseQuantizer):
     def __init__(self, bits, observer, rounding, axis=0, signed=False):
         super().__init__(bits)
 
+        self.bits = bits
         self.axis = axis
-        self.observer = observer
         self.rounding = rounding
+        self.signed = signed
 
         if signed:
             self.qmin = -(1 << (bits - 1))
